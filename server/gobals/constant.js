@@ -1,0 +1,121 @@
+/**
+ * Global Constants
+ * Centralized constants for the entire application
+ */
+
+// Application States
+const STATE = {
+  ACTIVE: 'ACTIVE',
+  INACTIVE: 'INACTIVE',
+  PENDING: 'PENDING',
+  SUSPENDED: 'SUSPENDED',
+  DELETED: 'DELETED',
+  ARCHIVED: 'ARCHIVED',
+  DRAFT: 'DRAFT',
+  PUBLISHED: 'PUBLISHED',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED'
+};
+
+// Response Code Ranges
+const RESPONSE_CODES = {
+  // Success Codes (1000-1099)
+  SUCCESS: 1000,
+  CREATED: 1001,
+  UPDATED: 1002,
+  DELETED: 1003,
+  NO_CONTENT: 1004,
+  FETCHED: 1005,
+
+  // Client Error Codes (2000-2099)
+  BAD_REQUEST: 2000,
+  VALIDATION_ERROR: 2001,
+  MISSING_FIELDS: 2002,
+  INVALID_FORMAT: 2003,
+  DUPLICATE_ENTRY: 2004,
+  NOT_FOUND: 2005,
+  ALREADY_EXISTS: 2006,
+  INVALID_CREDENTIALS: 2007,
+  EXPIRED: 2008,
+
+  // Server Error Codes (3000-3099)
+  SERVER_ERROR: 3000,
+  DATABASE_ERROR: 3001,
+  SERVICE_UNAVAILABLE: 3002,
+  TIMEOUT: 3003,
+  CONFIGURATION_ERROR: 3004,
+
+  // Authentication/Authorization Codes (4000-4099)
+  UNAUTHORIZED: 4000,
+  INVALID_TOKEN: 4001,
+  TOKEN_EXPIRED: 4002,
+  FORBIDDEN: 4003,
+  ACCESS_DENIED: 4004,
+
+  // External Service Codes (5000-5099)
+  EXTERNAL_API_ERROR: 5000,
+  PAYMENT_FAILED: 5001,
+  EMAIL_FAILED: 5002,
+  SMS_FAILED: 5003
+};
+
+// HTTP Status Code Mapping
+const HTTP_STATUS = {
+  OK: 200,
+  CREATED: 201,
+  NO_CONTENT: 204,
+  BAD_REQUEST: 400,
+  UNAUTHORIZED: 401,
+  FORBIDDEN: 403,
+  NOT_FOUND: 404,
+  CONFLICT: 409,
+  INTERNAL_SERVER_ERROR: 500,
+  SERVICE_UNAVAILABLE: 503
+};
+
+// Pagination Defaults
+const PAGINATION = {
+  DEFAULT_PAGE: 1,
+  DEFAULT_LIMIT: 10,
+  MAX_LIMIT: 100
+};
+
+// Date Formats
+const DATE_FORMAT = {
+  DEFAULT: 'YYYY-MM-DD',
+  WITH_TIME: 'YYYY-MM-DD HH:mm:ss',
+  TIMESTAMP: 'YYYY-MM-DDTHH:mm:ss.SSSZ'
+};
+
+// User Roles
+const USER_ROLES = {
+  ADMIN: 'ADMIN',
+  USER: 'USER',
+  MODERATOR: 'MODERATOR',
+  GUEST: 'GUEST'
+};
+
+// Sort Orders
+const SORT_ORDER = {
+  ASC: 'asc',
+  DESC: 'desc'
+};
+
+// Environment Types
+const ENVIRONMENT = {
+  DEVELOPMENT: 'development',
+  PRODUCTION: 'production',
+  TEST: 'test',
+  STAGING: 'staging'
+};
+
+module.exports = {
+  STATE,
+  RESPONSE_CODES,
+  HTTP_STATUS,
+  PAGINATION,
+  DATE_FORMAT,
+  USER_ROLES,
+  SORT_ORDER,
+  ENVIRONMENT
+};

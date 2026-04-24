@@ -1,0 +1,486 @@
+================================================================================
+                          CODING STANDARDS & CONVENTIONS
+                         Fullstack Template Project
+================================================================================
+
+TABLE OF CONTENTS
+-----------------
+1. Project Structure
+2. Naming Conventions
+3. Code Style & Formatting
+4. Response Pattern Standards
+5. Error Handling
+6. API Design Standards
+7. Database & Prisma Conventions
+8. Service Layer Standards
+9. Controller Layer Standards
+10. Security Best Practices
+
+
+================================================================================
+1. PROJECT STRUCTURE
+================================================================================
+
+MANDATORY FOLDER STRUCTURE:
+/server
+  ├── modules/              # Feature modules (MVC pattern)
+  │   └── [moduleName]Module/
+  │       ├── [moduleName]Controller.js
+  │       └── [moduleName]Service.js
+  ├── routes/              # Express route definitions
+  │   ├── index.js         # Central route registry
+  │   └── [module-name].routes.js
+  ├── gobals/              # Global constants and configs
+  │   ├── constant.js      # Application constants
+  │   └── response.js      # Response codes & messages
+  ├── utility/             # Reusable utility functions
+  │   └── ApiResponse.js   # Standard response formatter
+  ├── middleware/          # Express middleware
+  ├── prisma/              # Database schema
+  │   └── schema.prisma
+  └── scripts/             # Build/deployment scripts
+
+RULES:
+- Never place business logic in routes or controllers
+- Each module MUST have both controller and service
+- Services handle ALL database interactions
+- Controllers handle ONLY HTTP request/response
+
+
+================================================================================
+2. NAMING CONVENTIONS
+================================================================================
+
+FILES & FOLDERS:
+✓ Modules: camelCaseModule (e.g., userModule, blogPostModule)
+✓ Routes: kebab-case.routes.js (e.g., user.routes.js, blog-post.routes.js)
+✓ Controllers: camelCaseController.js (e.g., userController.js)
+✓ Services: camelCaseService.js (e.g., userService.js)
+✓ Utilities: PascalCase.js (e.g., ApiResponse.js, DateHelper.js)
+
+VARIABLES:
+✓ Constants: UPPER_SNAKE_CASE (e.g., MAX_RETRY_COUNT, API_BASE_URL)
+✓ Regular variables: camelCase (e.g., userId, responseData)
+✓ Private variables: _camelCase (e.g., _privateKey, _internalState)
+✓ Boolean variables: is/has/should prefix (e.g., isActive, hasPermission)
+
+FUNCTIONS:
+✓ Regular functions: camelCase (e.g., getUserById, calculateTotal)
+✓ Classes: PascalCase (e.g., UserService, ApiResponse)
+✓ Async functions: async prefix optional (e.g., async getUser() or getUser())
+✓ Event handlers: handle prefix (e.g., handleClick, handleSubmit)
+
+DATABASE/PRISMA:
+✓ Models: PascalCase (e.g., User, BlogPost, ProductCategory)
+✓ Fields: camelCase (e.g., firstName, createdAt, isActive)
+✓ Tables: PascalCase (automatically generated)
+
+API ENDPOINTS:
+✓ URLs: kebab-case (e.g., /api/user, /api/blog-post)
+✓ Query params: camelCase (e.g., ?userId=123&sortOrder=desc)
+
+
+================================================================================
+3. CODE STYLE & FORMATTING
+================================================================================
+
+INDENTATION:
+- Use 2 spaces (NO TABS)
+- Consistent indentation throughout
+
+SEMICOLONS:
+- ALWAYS use semicolons at end of statements
+- Example: const user = await prisma.user.findUnique();
+
+QUOTES:
+- Prefer single quotes '' for strings
+- Use backticks `` for template literals
+- Example: const message = 'Hello World';
+- Example: const greeting = `Hello ${name}`;
+
+LINE LENGTH:
+- Maximum 100 characters per line
+- Break long chains or function calls into multiple lines
+
+COMMENTS:
+- Use JSDoc for functions and classes
+- Inline comments for complex logic only
+- Keep comments up to date
+
+/**
+ * Fetch user by ID
+ * @param {string} userId - User ID
+ * @returns {Promise<Object>} User object
+ */
+async getUserById(userId) {
+  // Implementation
+}
+
+SPACING:
+- One blank line between functions
+- No blank lines at start/end of blocks
+- Space after keywords: if (), for (), while ()
+- Space around operators: a + b, x === y
+
+
+================================================================================
+4. RESPONSE PATTERN STANDARDS (MANDATORY)
+================================================================================
+
+ALL API RESPONSES MUST FOLLOW THIS EXACT STRUCTURE:
+
+{
+  "responseCode": 1000,
+  "responseMessage": "Success",
+  "responseData": {
+    "result": {
+      // Actual data here
+    }
+  }
+}
+
+RESPONSE CODE RANGES:
+1000-1099: Success responses
+2000-2099: Client errors (validation, bad request)
+3000-3099: Server errors (internal errors, database issues)
+4000-4099: Authentication/Authorization errors
+5000-5099: External service errors
+
+STANDARD RESPONSE CODES:
+SUCCESS:
+  1000: Success
+  1001: Created successfully
+  1002: Updated successfully
+  1003: Deleted successfully
+  1004: No content (successful but no data)
+
+CLIENT ERRORS:
+  2000: Bad request
+  2001: Validation error
+  2002: Missing required fields
+  2003: Invalid format
+  2004: Duplicate entry
+  2005: Resource not found
+
+SERVER ERRORS:
+  3000: Internal server error
+  3001: Database error
+  3002: Service unavailable
+
+AUTH ERRORS:
+  4000: Unauthorized
+  4001: Invalid token
+  4002: Token expired
+  4003: Forbidden (insufficient permissions)
+
+USING ApiResponse UTILITY:
+const ApiResponse = require('../utility/ApiResponse');
+
+// Success with data
+return ApiResponse(res, 'SUCCESS', data);
+
+// Error
+return ApiResponse(res, 'NOT_FOUND');
+
+// Custom response
+return ApiResponse(res, 'CUSTOM', data, 'Custom message');
+
+
+================================================================================
+5. ERROR HANDLING
+================================================================================
+
+SERVICE LAYER ERROR HANDLING:
+- ALWAYS return { success: boolean, data/error }
+- Never throw errors from services
+- Log errors before returning
+
+Example:
+async getById(id) {
+  try {
+    const item = await prisma.user.findUnique({ where: { id } });
+    if (!item) {
+      return { success: false, error: 'User not found' };
+    }
+    return { success: true, data: item };
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+CONTROLLER LAYER ERROR HANDLING:
+- Use ApiResponse for ALL responses
+- Check service result.success
+- Map to appropriate HTTP status
+
+Example:
+async getById(req, res) {
+  try {
+    const result = await userService.getById(req.params.id);
+    if (!result.success) {
+      return ApiResponse(res, 'NOT_FOUND');
+    }
+    return ApiResponse(res, 'SUCCESS', result.data);
+  } catch (error) {
+    return ApiResponse(res, 'SERVER_ERROR');
+  }
+}
+
+NEVER:
+❌ return res.json({ error: 'something' })
+❌ throw new Error('message') in controllers
+❌ Send raw database errors to client
+
+
+================================================================================
+6. API DESIGN STANDARDS
+================================================================================
+
+REST CONVENTIONS (MANDATORY):
+GET    /api/resource       - List all
+GET    /api/resource/:id   - Get single
+POST   /api/resource       - Create new
+PUT    /api/resource/:id   - Update full resource
+PATCH  /api/resource/:id   - Partial update
+DELETE /api/resource/:id   - Delete
+
+HTTP STATUS CODES:
+200: Success (GET, PUT, PATCH)
+201: Created (POST)
+204: No Content (DELETE)
+400: Bad Request
+401: Unauthorized
+403: Forbidden
+404: Not Found
+500: Internal Server Error
+
+REQUEST BODY:
+- Always validate incoming data
+- Use camelCase for JSON fields
+- Include only necessary fields
+
+QUERY PARAMETERS:
+- Use for filtering, sorting, pagination
+- Examples: ?page=1&limit=10&sortBy=createdAt&order=desc
+
+
+================================================================================
+7. DATABASE & PRISMA CONVENTIONS
+================================================================================
+
+SCHEMA DESIGN:
+- Every model MUST have: id, createdAt, updatedAt
+- Use descriptive field names
+- Always define relations properly
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  posts     Post[]
+}
+
+PRISMA CLIENT USAGE:
+- Import from prisma-client.js (singleton)
+- ALWAYS use try-catch
+- Use select/include to limit fields
+- Use transactions for multi-step operations
+
+const prisma = require('../../prisma-client');
+
+// Good: Select specific fields
+const users = await prisma.user.findMany({
+  select: {
+    id: true,
+    email: true,
+    name: true
+  }
+});
+
+// Good: Use transactions
+await prisma.$transaction([
+  prisma.user.update({ where: { id }, data: { isActive: false } }),
+  prisma.session.deleteMany({ where: { userId: id } })
+]);
+
+
+================================================================================
+8. SERVICE LAYER STANDARDS
+================================================================================
+
+RESPONSIBILITIES:
+- ALL business logic
+- ALL database operations
+- Data validation (business rules)
+- External API calls
+- Complex calculations
+
+STRUCTURE (MANDATORY):
+class ModuleService {
+  async getAll() { /* ... */ }
+  async getById(id) { /* ... */ }
+  async create(data) { /* ... */ }
+  async update(id, data) { /* ... */ }
+  async delete(id) { /* ... */ }
+  // Custom methods below
+}
+
+RETURN FORMAT (MANDATORY):
+✓ { success: true, data: result }
+✓ { success: false, error: 'message' }
+
+RULES:
+- One service per module
+- Export singleton instance: module.exports = new Service();
+- Never access req/res objects
+- Keep methods focused (single responsibility)
+
+
+================================================================================
+9. CONTROLLER LAYER STANDARDS
+================================================================================
+
+RESPONSIBILITIES:
+- HTTP request/response handling ONLY
+- Input validation (format, required fields)
+- Call service methods
+- Format responses using ApiResponse
+
+STRUCTURE (MANDATORY):
+class ModuleController {
+  async getAll(req, res) {
+    const result = await service.getAll();
+    if (!result.success) {
+      return ApiResponse(res, 'SERVER_ERROR');
+    }
+    return ApiResponse(res, 'SUCCESS', result.data);
+  }
+  // Other methods...
+}
+
+RULES:
+- NO business logic in controllers
+- NO direct database access
+- ALWAYS use ApiResponse
+- Bind methods when registering routes:
+  router.get('/', controller.getAll.bind(controller));
+
+
+================================================================================
+10. SECURITY BEST PRACTICES
+================================================================================
+
+ENVIRONMENT VARIABLES:
+- NEVER commit .env files
+- Use .env.example as template
+- Access via process.env.VARIABLE_NAME
+- Validate required env vars on startup
+
+INPUT VALIDATION:
+- Validate ALL user input
+- Sanitize strings
+- Check data types
+- Limit input lengths
+
+DATABASE:
+- Use parameterized queries (Prisma does this)
+- Never concatenate user input into queries
+- Use transactions for atomic operations
+
+AUTHENTICATION:
+- Store tokens securely
+- Use bcrypt for password hashing
+- Implement rate limiting
+- Validate tokens on protected routes
+
+CORS:
+- Configure allowed origins explicitly
+- Don't use '*' in production
+
+LOGGING:
+- Never log sensitive data (passwords, tokens)
+- Use appropriate log levels
+- Include timestamps and context
+
+
+================================================================================
+CONSTANTS USAGE
+================================================================================
+
+ALWAYS use constants defined in gobals/constant.js:
+
+const { STATE, RESPONSE_CODES } = require('../gobals/constant');
+
+// Check state
+if (user.status === STATE.ACTIVE) {
+  // Process
+}
+
+// Use response codes
+return ApiResponse(res, 'SUCCESS', data);
+
+
+================================================================================
+GIT COMMIT CONVENTIONS
+================================================================================
+
+feat: Add new feature
+fix: Fix bug
+docs: Documentation changes
+style: Code style changes (formatting)
+refactor: Code refactoring
+test: Add/update tests
+chore: Build process or dependencies
+
+Examples:
+- feat: add user authentication module
+- fix: resolve database connection timeout
+- docs: update API documentation
+
+
+================================================================================
+CHECKLIST BEFORE COMMIT
+================================================================================
+
+□ Code follows naming conventions
+□ All responses use ApiResponse utility
+□ Services return { success, data/error } format
+□ Controllers use ApiResponse for all responses
+□ No console.logs (use proper logger)
+□ No commented-out code
+□ All imports at top of file
+□ No unused variables/imports
+□ Error handling implemented
+□ Constants used instead of magic numbers/strings
+□ JSDoc comments for public functions
+□ No sensitive data in code
+
+
+================================================================================
+REVIEW PROCESS
+================================================================================
+
+SELF-REVIEW:
+1. Read through your own code
+2. Test all endpoints manually
+3. Check error cases
+4. Verify response format
+5. Run linter
+
+PEER REVIEW:
+- Check adherence to standards
+- Verify business logic correctness
+- Ensure proper error handling
+- Confirm security best practices
+
+
+================================================================================
+For questions or clarifications, refer to:
+- MODULE-GENERATOR.md for module creation
+- README.md for project setup
+- Prisma docs: https://www.prisma.io/docs
+================================================================================
