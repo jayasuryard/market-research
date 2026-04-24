@@ -1,106 +1,25 @@
-@import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter+Tight:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap');
+"""Patch index.css and write Landing.jsx for AMIE redesign."""
+import re
 
-@theme {
-  --color-bg: #08080A;
-  --color-surface: #0F0F13;
-  --color-surface-2: #161619;
-  --color-border: #1C1C24;
-  --color-border-2: #26262F;
-  --color-accent: #00E879;
-  --color-accent-dim: #00E87920;
-  --color-accent-muted: #00E87940;
-  --color-text: #EAEAEA;
-  --color-text-2: #8B8B97;
-  --color-text-3: #4A4A56;
-  --color-error: #E5383B;
-  --color-warning: #F59E0B;
-  --color-success: #00E879;
+BASE = '/Users/jayasurya/Desktop/R-D/Mark/market-research/src'
 
-  --font-sans: 'Inter', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
-  --font-display: 'Instrument Serif', Georgia, serif;
-}
+# ── 1. Patch index.css ──────────────────────────────────────────────────────
+with open(f'{BASE}/index.css', 'r') as f:
+    css = f.read()
 
-*, *::before, *::after {
-  box-sizing: border-box;
-}
+# Replace Google Fonts import to add Instrument Serif + Inter Tight
+old_import = "@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap');"
+new_import = "@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter+Tight:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap');"
+css = css.replace(old_import, new_import)
 
-html {
-  scroll-behavior: smooth;
-}
+# Inject --font-display into @theme block (before closing })
+css = css.replace(
+    "  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;",
+    "  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;\n  --font-display: 'Instrument Serif', Georgia, serif;"
+)
 
-body {
-  background-color: var(--color-bg);
-  color: var(--color-text);
-  font-family: var(--font-sans);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-::-webkit-scrollbar {
-  width: 4px;
-}
-::-webkit-scrollbar-track {
-  background: var(--color-bg);
-}
-::-webkit-scrollbar-thumb {
-  background: var(--color-border-2);
-  border-radius: 2px;
-}
-
-.font-mono {
-  font-family: var(--font-mono);
-}
-
-@keyframes blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
-}
-
-@keyframes scanline {
-  0% { transform: translateY(-100%); }
-  100% { transform: translateY(100vh); }
-}
-
-@keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(16px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 0 0 #00E87930; }
-  50% { box-shadow: 0 0 0 8px #00E87900; }
-}
-
-.cursor-blink {
-  animation: blink 1s step-end infinite;
-}
-
-.animate-fade-up {
-  animation: fadeInUp 0.5s ease forwards;
-}
-
-.glow-accent {
-  box-shadow: 0 0 20px #00E87925, 0 0 40px #00E87910;
-}
-
-.border-accent-glow {
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 1px var(--color-accent);
-}
-
-.section-number {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.15em;
-  color: var(--color-text-3);
-}
-
-.noise-bg {
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
-}
-
+# Append AMIE additions at the end
+AMIE_CSS = r"""
 /* ── AMIE Paper Theme ──────────────────────────────────────────────── */
 :root {
   /* Paper background & ink */
@@ -213,3 +132,59 @@ body {
 .animate-fade-up {
   animation: amie-fade-up 0.45s ease forwards;
 }
+"""
+
+css = css + AMIE_CSS
+
+with open(f'{BASE}/index.css', 'w') as f:
+    f.write(css)
+print('index.css patched')
+
+# ── 2. Rewrite Landing.jsx ─────────────────────────────────────────────────
+LANDING = """import { useEffect } from 'react';
+import { Nav }             from '../components/amie/Nav.jsx';
+import { Hero }            from '../components/amie/Hero.jsx';
+import { MarqueeBar }      from '../components/amie/MarqueeBar.jsx';
+import { Problem }         from '../components/amie/Problem.jsx';
+import { HowItWorks }      from '../components/amie/HowItWorks.jsx';
+import { Validation }      from '../components/amie/Validation.jsx';
+import { Engine }          from '../components/amie/Engine.jsx';
+import { Report }          from '../components/amie/Report.jsx';
+import { Differentiation } from '../components/amie/Differentiation.jsx';
+import { Audience }        from '../components/amie/Audience.jsx';
+import { FAQ }             from '../components/amie/FAQ.jsx';
+import { Waitlist }        from '../components/amie/Waitlist.jsx';
+import { Footer }          from '../components/amie/Footer.jsx';
+
+export default function Landing() {
+  useEffect(() => {
+    document.title = 'MarketIQ.ai \u2014 Autonomous Market Intelligence Engine';
+  }, []);
+
+  return (
+    <div className="paper">
+      <Nav />
+      <main>
+        <Hero />
+        <MarqueeBar />
+        <Problem />
+        <HowItWorks />
+        <Validation />
+        <Engine />
+        <Report />
+        <Differentiation />
+        <Audience />
+        <FAQ />
+        <Waitlist />
+      </main>
+      <Footer />
+    </div>
+  );
+}
+"""
+
+with open(f'{BASE}/pages/Landing.jsx', 'w') as f:
+    f.write(LANDING)
+print('Landing.jsx written')
+
+print('All done.')
