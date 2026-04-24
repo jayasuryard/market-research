@@ -3,7 +3,7 @@
  * Standardized response messages mapped to response codes
  */
 
-const { RESPONSE_CODES } = require('./constant');
+import { RESPONSE_CODES } from './constant.js';
 
 const RESPONSE_MESSAGES = {
   // Success Messages (1000-1099)
@@ -66,7 +66,7 @@ const RESPONSE_TYPES = {
   FORBIDDEN: RESPONSE_CODES.FORBIDDEN
 };
 
-module.exports = {
+export {
   RESPONSE_MESSAGES,
   RESPONSE_TYPES
 };

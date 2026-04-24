@@ -43,7 +43,7 @@ function generateServiceTemplate(moduleName, modelName) {
   const camelModule = toCamelCase(moduleName);
   const pascalModel = toPascalCase(modelName);
   
-  return `const prisma = require('../../prisma-client');
+  return `import prisma from '../../config/dbconnect.js';
 
 /**
  * ${toPascalCase(moduleName)} Service Layer
@@ -116,7 +116,7 @@ class ${toPascalCase(moduleName)}Service {
   }
 }
 
-module.exports = new ${toPascalCase(moduleName)}Service();
+export default new ${toPascalCase(moduleName)}Service();
 `;
 }
 
@@ -125,8 +125,8 @@ function generateControllerTemplate(moduleName) {
   const pascalModule = toPascalCase(moduleName);
   const kebabModule = toKebabCase(moduleName);
   
-  return `const ${camelModule}Service = require('./${camelModule}Service');
-const ApiResponse = require('../../utility/ApiResponse');
+  return `import ${camelModule}Service from './${camelModule}Service.js';
+import ApiResponse from '../../utility/ApiResponse.js';
 
 /**
  * ${pascalModule} Controller
@@ -228,7 +228,7 @@ class ${pascalModule}Controller {
   }
 }
 
-module.exports = new ${pascalModule}Controller();
+export default new ${pascalModule}Controller();
 `;
 }
 
@@ -237,9 +237,9 @@ function generateRouteTemplate(moduleName) {
   const pascalModule = toPascalCase(moduleName);
   const kebabModule = toKebabCase(moduleName);
   
-  return `const express = require('express');
+  return `import express from 'express';
 const router = express.Router();
-const ${camelModule}Controller = require('../modules/${camelModule}Module/${camelModule}Controller');
+import ${camelModule}Controller from '../modules/${camelModule}Module/${camelModule}Controller.js';
 
 /**
  * ${pascalModule} Routes
@@ -261,7 +261,7 @@ router.put('/:id', ${camelModule}Controller.update.bind(${camelModule}Controller
 // DELETE item
 router.delete('/:id', ${camelModule}Controller.delete.bind(${camelModule}Controller));
 
-module.exports = router;
+export default router;
 `;
 }
 
@@ -315,7 +315,7 @@ async function generateModule() {
     let routesIndex = fs.readFileSync(routesIndexPath, 'utf8');
     
     // Add import
-    const importLine = `const ${camelModule}Routes = require('./${kebabModule}.routes');`;
+    const importLine = `import ${camelModule}Routes from './${kebabModule}.routes.js';`;
     const importRegex = /\/\/ Import route modules/;
     routesIndex = routesIndex.replace(importRegex, `// Import route modules\n${importLine}`);
     

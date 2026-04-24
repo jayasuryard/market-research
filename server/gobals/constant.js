@@ -109,7 +109,7 @@ const ENVIRONMENT = {
   STAGING: 'staging'
 };
 
-module.exports = {
+export {
   STATE,
   RESPONSE_CODES,
   HTTP_STATUS,

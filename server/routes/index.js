@@ -1,4 +1,4 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
 
 /**
@@ -7,7 +7,7 @@ const router = express.Router();
  */
 
 // Import route modules
-const exampleRoutes = require('./route');
+import exampleRoutes from './route.js';
 
 // Register routes
 router.use('/example', exampleRoutes);
@@ -20,4 +20,4 @@ router.get('/health', (req, res) => {
   });
 });
 
-module.exports = router;
+export default router;

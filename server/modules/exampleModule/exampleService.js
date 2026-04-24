@@ -1,4 +1,4 @@
-const prisma = require('../../prisma-client');
+import prisma from '../../config/dbconnect.js';
 
 /**
  * Example Service Layer
@@ -71,4 +71,4 @@ class ExampleService {
   }
 }
 
-module.exports = new ExampleService();
+export default new ExampleService();

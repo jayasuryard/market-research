@@ -1,8 +1,8 @@
-const express = require('express');
-require('dotenv').config();
-const morgan = require('morgan');
-const prisma = require('./prisma-client');
-const routes = require('./routes');
+import express from 'express';
+import 'dotenv/config';
+import morgan from 'morgan';
+import prisma from './config/dbconnect.js';
+import routes from './routes/index.js';
 
 const app = express();
 const port = process.env.PORT || 3000;

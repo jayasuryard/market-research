@@ -1,5 +1,5 @@
-const exampleService = require('./exampleService');
-const ApiResponse = require('../../utility/ApiResponse');
+import exampleService from './exampleService.js';
+import ApiResponse from '../../utility/ApiResponse.js';
 
 /**
  * Example Controller
@@ -107,4 +107,4 @@ class ExampleController {
   }
 }
 
-module.exports = new ExampleController();
+export default new ExampleController();

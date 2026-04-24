@@ -1,6 +1,6 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const exampleController = require('../modules/exampleModule/exampleController');
+import exampleController from '../modules/exampleModule/exampleController.js';
 
 /**
  * Example Routes
@@ -22,4 +22,4 @@ router.put('/:id', exampleController.update.bind(exampleController));
 // DELETE item
 router.delete('/:id', exampleController.delete.bind(exampleController));
 
-module.exports = router;
+export default router;

@@ -3,8 +3,8 @@
  * Standardized API response formatter
  */
 
-const { RESPONSE_CODES, HTTP_STATUS } = require('../gobals/constant');
-const { RESPONSE_MESSAGES, RESPONSE_TYPES } = require('../gobals/response');
+import { RESPONSE_CODES, HTTP_STATUS } from '../gobals/constant.js';
+import { RESPONSE_MESSAGES, RESPONSE_TYPES } from '../gobals/response.js';
 
 function getHttpStatus(responseCode) {
   if (responseCode >= 1000 && responseCode < 1100) {
@@ -108,5 +108,5 @@ ApiResponse.validationError = (res, errors, message = null) => {
   return ApiResponse(res, 'VALIDATION_ERROR', { errors }, message);
 };
 
-module.exports = ApiResponse;
-module.exports.serializeData = serializeData;
+export default ApiResponse;
+export { serializeData };
