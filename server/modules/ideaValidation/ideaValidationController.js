@@ -135,6 +135,27 @@ class IdeaValidationController {
   }
 
   /**
+   * POST /api/validation/predict-context
+   * AI predicts target audience, pricing, and geography from idea description
+   */
+  async predictContext(req, res) {
+    try {
+      const { ideaDescription } = req.body;
+      if (!ideaDescription || ideaDescription.trim().length < 20) {
+        return ApiResponse(res, 'VALIDATION_ERROR', null, 'Idea description must be at least 20 characters');
+      }
+      const result = await ideaValidationService.predictContext(ideaDescription);
+      if (!result.success) {
+        return ApiResponse(res, 'SERVER_ERROR', null, result.error);
+      }
+      return ApiResponse(res, 'SUCCESS', result.data);
+    } catch (error) {
+      console.error('Predict context error:', error);
+      return ApiResponse(res, 'SERVER_ERROR');
+    }
+  }
+
+  /**
    * GET /api/validation/user/:userId
    * Get all submissions for a user
    */

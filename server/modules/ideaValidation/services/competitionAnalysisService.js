@@ -1,377 +1,182 @@
 import prisma from '../../../config/dbconnect.js';
+import { chatJSON, MODELS, msg } from '../../../services/groqService.js';
+import { googleSearch } from '../../../services/apifyService.js';
 
 /**
- * Competition Analysis Service
- * Identifies and analyzes competitors and alternatives
+ * Competition Analysis Service  —  Apify + Groq powered
  */
-
 class CompetitionAnalysisService {
-  /**
-   * Analyze competition for the idea
-   */
   async analyzeCompetition(analysisId, structuredIdea) {
+    const { problemStatement, keywords = [], problemCategory = 'other' } = structuredIdea;
+    console.log('[CompetitionAnalysis] Identifying competitors via Apify...');
+
+    const searchQueries = [
+      `${keywords[0] || problemStatement} software tool alternatives`,
+      `best ${keywords[0] || problemStatement} tools 2024`,
+      `${problemCategory} startups ${keywords[0] || ''}`,
+    ].join('\n');
+
+    const results = await googleSearch(searchQueries, 15);
+
+    const competitors = results.length
+      ? await this._extractCompetitorsWithGroq(problemStatement, keywords, results)
+      : this._fallbackCompetitors(problemStatement);
+
+    for (const c of competitors) {
+      await prisma.competitor.create({
+        data: {
+          analysisId,
+          name: c.name,
+          type: c.type,
+          coreOffering: c.coreOffering,
+          pricingModel: c.pricingModel || 'Unknown',
+          positioning: c.positioning || '',
+          weaknessSignals: c.weaknessSignals || [],
+          userFrustrations: c.userFrustrations || [],
+          featureGaps: c.featureGaps || [],
+          marketShare: c.marketShare || 'minor',
+          userBase: c.userBase || null,
+        },
+      });
+    }
+
+    console.log(`[CompetitionAnalysis] Identified ${competitors.length} competitors`);
+    return { success: true, competitorsCount: competitors.length };
+  }
+
+  async _extractCompetitorsWithGroq(problemStatement, keywords, results) {
+    const resultsText = results
+      .slice(0, 20)
+      .map(r => `- ${r.title}: ${r.description} (${r.url})`)
+      .join('\n');
+
     try {
-      const { problemStatement, primaryUseCases, substituteSolutions } = structuredIdea;
-      
-      console.log('[CompetitionAnalysis] Starting competitor identification...');
-      
-      // Identify different types of competitors
-      const directCompetitors = await this.identifyDirectCompetitors(problemStatement);
-      const indirectCompetitors = await this.identifyIndirectCompetitors(primaryUseCases);
-      const alternatives = await this.identifyAlternatives(substituteSolutions);
-      
-      const allCompetitors = [
-        ...directCompetitors,
-        ...indirectCompetitors,
-        ...alternatives
-      ];
-      
-      // Store competitors in database
-      for (const competitor of allCompetitors) {
-        await prisma.competitor.create({
-          data: {
-            analysisId,
-            name: competitor.name,
-            type: competitor.type,
-            coreOffering: competitor.coreOffering,
-            pricingModel: competitor.pricingModel,
-            positioning: competitor.positioning,
-            weaknessSignals: competitor.weaknessSignals,
-            userFrustrations: competitor.userFrustrations,
-            featureGaps: competitor.featureGaps,
-            marketShare: competitor.marketShare,
-            userBase: competitor.userBase
-          }
-        });
-      }
-      
-      console.log(`[CompetitionAnalysis] Identified ${allCompetitors.length} competitors`);
-      
-      return {
-        success: true,
-        competitorsCount: allCompetitors.length
-      };
-    } catch (error) {
-      console.error('Analyze competition error:', error);
-      throw error;
+      const resp = await chatJSON(msg(
+        'You are a competitive intelligence analyst. Extract competitor info from search results.',
+        `Problem space: "${problemStatement}"
+Keywords: ${keywords.join(', ')}
+
+Search results:
+${resultsText}
+
+Extract 3-5 real competitors. Return JSON:
+{
+  "competitors": [
+    {
+      "name": "Product/Company name",
+      "type": "direct|indirect|alternative",
+      "coreOffering": "What they do in one sentence",
+      "pricingModel": "e.g. $49/month or Freemium or Unknown",
+      "positioning": "Their market position statement",
+      "marketShare": "dominant|major|minor|emerging",
+      "userBase": "estimated users as string or null",
+      "weaknessSignals": [{"complaint": "User complaint", "frequency": 20, "severity": "high|medium|low", "source": "reviews"}],
+      "userFrustrations": [{"frustration": "Pain users have", "mentions": 15}],
+      "featureGaps": [{"gap": "Missing feature users want", "requestCount": 25, "opportunity": true}]
+    }
+  ]
+}`
+      ), { model: MODELS.strong, maxTokens: 2000 });
+
+      return Array.isArray(resp.competitors) && resp.competitors.length
+        ? resp.competitors : this._fallbackCompetitors(problemStatement);
+    } catch (err) {
+      console.error('[CompetitionAnalysis] Groq failed:', err.message);
+      return this._fallbackCompetitors(problemStatement);
     }
   }
 
-  /**
-   * Identify direct competitors
-   * In production: Use ProductHunt, Crunchbase, G2, etc. APIs
-   */
-  async identifyDirectCompetitors(problemStatement) {
-    // PRODUCTION TODO: Integrate with:
-    // - ProductHunt API
-    // - Crunchbase API
-    // - G2/Capterra APIs
-    // - Google search for "[problem] software" or "[problem] tool"
-    
-    const competitors = [];
-    
-    // Simulate competitor discovery
-    const simulatedCompetitors = [
+  _fallbackCompetitors(problemStatement) {
+    return [
       {
-        name: 'CompetitorA',
+        name: 'Market Incumbent',
         type: 'direct',
-        coreOffering: 'Similar solution addressing the same problem space',
-        pricingModel: '$49/month with 3 tiers (Starter, Pro, Enterprise)',
-        positioning: 'All-in-one solution for mid-market companies',
-        weaknessSignals: [
-          {
-            complaint: 'Too complicated for small teams',
-            frequency: 23,
-            severity: 'high',
-            source: 'G2 reviews'
-          },
-          {
-            complaint: 'Pricing is too expensive for startups',
-            frequency: 18,
-            severity: 'medium',
-            source: 'Capterra reviews'
-          }
-        ],
-        userFrustrations: [
-          {
-            frustration: 'Steep learning curve',
-            mentions: 15
-          },
-          {
-            frustration: 'Poor customer support',
-            mentions: 12
-          }
-        ],
-        featureGaps: [
-          {
-            feature: 'Mobile app',
-            demandLevel: 'high',
-            userRequests: 34
-          },
-          {
-            feature: 'API access in lower tiers',
-            demandLevel: 'medium',
-            userRequests: 19
-          }
-        ],
+        coreOffering: `Solution for: ${problemStatement.substring(0, 50)}`,
+        pricingModel: '$49/month',
+        positioning: 'Established enterprise solution',
         marketShare: 'major',
-        userBase: '10,000 - 50,000 users'
+        userBase: '10k+ users',
+        weaknessSignals: [{ complaint: 'Too complex for small teams', frequency: 20, severity: 'high', source: 'reviews' }],
+        userFrustrations: [{ frustration: 'Steep learning curve', mentions: 15 }],
+        featureGaps: [{ gap: 'Mobile support', requestCount: 25, opportunity: true }],
       },
-      {
-        name: 'CompetitorB',
-        type: 'direct',
-        coreOffering: 'Focused solution for specific use case',
-        pricingModel: '$29/month flat pricing',
-        positioning: 'Simple, affordable solution for solopreneurs',
-        weaknessSignals: [
-          {
-            complaint: 'Lacks advanced features',
-            frequency: 31,
-            severity: 'medium',
-            source: 'ProductHunt comments'
-          }
-        ],
-        userFrustrations: [
-          {
-            frustration: 'Limited integrations',
-            mentions: 22
-          }
-        ],
-        featureGaps: [
-          {
-            feature: 'Team collaboration',
-            demandLevel: 'high',
-            userRequests: 45
-          }
-        ],
-        marketShare: 'niche',
-        userBase: '1,000 - 10,000 users'
-      }
     ];
-    
-    competitors.push(...simulatedCompetitors);
-    
-    // IMPLEMENTATION NOTE:
-    // Real implementation would:
-    // 1. Extract keywords from problem statement
-    // 2. Search ProductHunt, AlternativeTo, etc.
-    // 3. Scrape competitor websites for positioning/pricing
-    // 4. Analyze reviews for weakness patterns
-    // 5. Use Crunchbase for funding/traction data
-    
-    return competitors;
   }
 
-  /**
-   * Identify indirect competitors
-   */
-  async identifyIndirectCompetitors(primaryUseCases) {
-    const competitors = [];
-    
-    // Simulate indirect competitor discovery
-    const simulatedCompetitors = [
-      {
-        name: 'GenericTool',
-        type: 'indirect',
-        coreOffering: 'General-purpose tool that can be adapted',
-        pricingModel: '$15/month with limited free tier',
-        positioning: 'Swiss army knife for multiple use cases',
-        weaknessSignals: [
-          {
-            complaint: 'Not optimized for specific use cases',
-            frequency: 27,
-            severity: 'medium',
-            source: 'User forums'
-          }
-        ],
-        userFrustrations: [
-          {
-            frustration: 'Requires too much customization',
-            mentions: 19
-          }
-        ],
-        featureGaps: [
-          {
-            feature: 'Purpose-built workflows',
-            demandLevel: 'high',
-            userRequests: 28
-          }
-        ],
-        marketShare: 'dominant',
-        userBase: '100,000+ users'
-      }
-    ];
-    
-    competitors.push(...simulatedCompetitors);
-    
-    return competitors;
-  }
-
-  /**
-   * Identify alternative solutions (behaviors, not just tools)
-   */
-  async identifyAlternatives(substituteSolutions) {
-    const alternatives = [];
-    
-    // Convert substitute behaviors into competitor entries
-    substituteSolutions.forEach(substitute => {
-      if (substitute.type === 'tool') {
-        alternatives.push({
-          name: substitute.description,
-          type: 'alternative',
-          coreOffering: `Existing approach: ${substitute.category}`,
-          pricingModel: 'Varies or free',
-          positioning: 'Current solution users are adopting',
-          weaknessSignals: [
-            {
-              complaint: 'Not purpose-built for this use case',
-              frequency: 10,
-              severity: 'low',
-              source: 'general_observation'
-            }
-          ],
-          userFrustrations: [
-            {
-              frustration: 'Inefficient workflow',
-              mentions: 8
-            }
-          ],
-          featureGaps: [
-            {
-              feature: 'Specialized functionality',
-              demandLevel: 'medium',
-              userRequests: 12
-            }
-          ],
-          marketShare: 'widespread',
-          userBase: 'Unknown'
-        });
-      }
-    });
-    
-    return alternatives;
-  }
-
-  /**
-   * Identify gap opportunities from competitor analysis
-   */
   async identifyGaps(analysisId) {
-    try {
-      const competitors = await prisma.competitor.findMany({
-        where: { analysisId }
+    const competitors = await prisma.competitor.findMany({ where: { analysisId } });
+    if (!competitors.length) return;
+
+    const weaknesses = competitors.flatMap(c =>
+      (Array.isArray(c.weaknessSignals) ? c.weaknessSignals : []).map(w => ({
+        competitor: c.name,
+        complaint: w.complaint,
+        frequency: w.frequency,
+        severity: w.severity,
+      }))
+    );
+
+    const gaps = weaknesses.length
+      ? await this._generateGapsWithGroq(weaknesses, competitors)
+      : this._fallbackGaps();
+
+    for (const [i, gap] of gaps.entries()) {
+      await prisma.gapOpportunity.create({
+        data: {
+          analysisId,
+          rank: i + 1,
+          type: gap.type,
+          description: gap.description,
+          impactPotential: gap.impactPotential,
+          effortToAddress: gap.effortToAddress,
+          competitiveAdvantage: gap.competitiveAdvantage ?? false,
+          validationEvidence: gap.validationEvidence || [],
+        },
       });
-      
-      const gaps = [];
-      
-      // Aggregate feature gaps across competitors
-      const featureGapMap = new Map();
-      competitors.forEach(competitor => {
-        if (Array.isArray(competitor.featureGaps)) {
-          competitor.featureGaps.forEach(gap => {
-            const key = gap.feature;
-            if (featureGapMap.has(key)) {
-              const existing = featureGapMap.get(key);
-              existing.userRequests += gap.userRequests || 0;
-              existing.competitors.push(competitor.name);
-            } else {
-              featureGapMap.set(key, {
-                feature: gap.feature,
-                demandLevel: gap.demandLevel,
-                userRequests: gap.userRequests || 0,
-                competitors: [competitor.name]
-              });
-            }
-          });
-        }
-      });
-      
-      // Create gap opportunities from aggregated data
-      featureGapMap.forEach((gapData, feature) => {
-        const impactPotential = gapData.userRequests > 30 ? 'HIGH' : 
-                               gapData.userRequests > 15 ? 'MEDIUM' : 'LOW';
-        
-        gaps.push({
-          gapType: 'feature_gap',
-          description: `Missing feature: ${feature}`,
-          validationEvidence: [
-            {
-              type: 'user_requests',
-              count: gapData.userRequests,
-              competitors: gapData.competitors
-            }
-          ],
-          impactPotential,
-          effortToAddress: this.estimateEffort(feature),
-          competitiveAdvantage: gapData.competitors.length > 1
-        });
-      });
-      
-      // Identify underserved segments
-      const frustrationMap = new Map();
-      competitors.forEach(competitor => {
-        if (Array.isArray(competitor.userFrustrations)) {
-          competitor.userFrustrations.forEach(frustration => {
-            const key = frustration.frustration;
-            if (frustrationMap.has(key)) {
-              frustrationMap.get(key).mentions += frustration.mentions || 0;
-            } else {
-              frustrationMap.set(key, { ...frustration });
-            }
-          });
-        }
-      });
-      
-      frustrationMap.forEach((data, frustration) => {
-        if (data.mentions > 10) {
-          gaps.push({
-            gapType: 'ux_gap',
-            description: `UX improvement opportunity: Address "${frustration}"`,
-            validationEvidence: [
-              {
-                type: 'user_complaints',
-                mentions: data.mentions
-              }
-            ],
-            impactPotential: data.mentions > 20 ? 'HIGH' : 'MEDIUM',
-            effortToAddress: 'MEDIUM',
-            competitiveAdvantage: true
-          });
-        }
-      });
-      
-      // Store gaps in database
-      for (const gap of gaps) {
-        await prisma.gapOpportunity.create({
-          data: {
-            analysisId,
-            ...gap
-          }
-        });
-      }
-      
-      return gaps;
-    } catch (error) {
-      console.error('Identify gaps error:', error);
-      return [];
     }
   }
 
-  /**
-   * Estimate effort to address a gap
-   */
-  estimateEffort(feature) {
-    const lowEffortKeywords = ['ui', 'ux', 'design', 'template', 'filter'];
-    const highEffortKeywords = ['ai', 'ml', 'blockchain', 'real-time', 'integration'];
-    
-    const featureLower = feature.toLowerCase();
-    
-    if (lowEffortKeywords.some(kw => featureLower.includes(kw))) {
-      return 'LOW';
+  async _generateGapsWithGroq(weaknesses, competitors) {
+    const weaknessText = weaknesses
+      .map(w => `${w.competitor}: "${w.complaint}" (×${w.frequency}, ${w.severity})`)
+      .join('\n');
+
+    try {
+      const resp = await chatJSON(msg(
+        'You are a product strategist identifying market opportunity gaps from competitor weaknesses.',
+        `Competitor weaknesses:\n${weaknessText}\n\nExtract 3-5 opportunity gaps. Return JSON:
+{
+  "gaps": [
+    {
+      "type": "feature_gap|ux_gap|pricing_gap|market_gap|service_gap",
+      "description": "Clear opportunity description",
+      "impactPotential": "HIGH|MEDIUM|LOW",
+      "effortToAddress": "LOW|MEDIUM|HIGH",
+      "competitiveAdvantage": true,
+      "validationEvidence": [{"type": "user_complaints", "mentions": 30, "competitors": ["Name"]}]
     }
-    if (highEffortKeywords.some(kw => featureLower.includes(kw))) {
-      return 'HIGH';
+  ]
+}`
+      ), { model: MODELS.fast, maxTokens: 1200 });
+
+      return Array.isArray(resp.gaps) && resp.gaps.length ? resp.gaps : this._fallbackGaps();
+    } catch (err) {
+      console.error('[CompetitionAnalysis] Gap generation failed:', err.message);
+      return this._fallbackGaps();
     }
-    return 'MEDIUM';
+  }
+
+  _fallbackGaps() {
+    return [
+      {
+        type: 'feature_gap',
+        description: 'Missing integration capabilities frequently requested by users',
+        impactPotential: 'HIGH',
+        effortToAddress: 'MEDIUM',
+        competitiveAdvantage: true,
+        validationEvidence: [{ type: 'user_complaints', mentions: 30 }],
+      },
+    ];
   }
 }
 

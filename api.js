@@ -127,6 +127,16 @@ const exampleApi = {
   }
 };
 
+export const validationApi = {
+  predictContext: (ideaDescription) => post('/validation/predict-context', { ideaDescription }),
+  submitIdea: (data) => post('/validation/submit', data),
+  provideClarification: (id, answers) => post(`/validation/${id}/clarify`, { answers }),
+  startAnalysis: (id) => post(`/validation/${id}/analyze`, {}),
+  getStatus: (id) => get(`/validation/${id}/status`),
+  getReport: (id) => get(`/validation/${id}/report`),
+  getUserSubmissions: (userId) => get(`/validation/user/${userId}`),
+};
+
 export default {
   get,
   post,
@@ -134,6 +144,7 @@ export default {
   patch,
   delete: del,
   example: exampleApi,
+  validation: validationApi,
   isSuccess,
   isAuthError
 };

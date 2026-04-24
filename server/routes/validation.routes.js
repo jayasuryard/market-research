@@ -7,6 +7,9 @@ import ideaValidationController from '../modules/ideaValidation/ideaValidationCo
  * Base path: /api/validation
  */
 
+// AI predict target audience + pricing from idea description
+router.post('/predict-context', ideaValidationController.predictContext.bind(ideaValidationController));
+
 // Submit new idea for validation
 router.post('/submit', ideaValidationController.submitIdea.bind(ideaValidationController));
 
