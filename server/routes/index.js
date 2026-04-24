@@ -8,9 +8,11 @@ const router = express.Router();
 
 // Import route modules
 import exampleRoutes from './route.js';
+import validationRoutes from './validation.routes.js';
 
 // Register routes
 router.use('/example', exampleRoutes);
+router.use('/validation', validationRoutes);
 
 // Health check endpoint
 router.get('/health', (req, res) => {

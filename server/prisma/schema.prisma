@@ -12,11 +12,215 @@ datasource db {
   provider = "postgresql"
 }
 
-// Sample User model
+// Market Validation System Models
+
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id               String            @id @default(cuid())
+  email            String            @unique
+  name             String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  ideaSubmissions  IdeaSubmission[]
+}
+
+model IdeaSubmission {
+  id                  String               @id @default(cuid())
+  userId              String
+  user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Input Fields
+  ideaDescription     String               @db.Text
+  targetAudience      String?              @db.Text
+  geography           String?
+  pricingAssumption   String?
+  stage               String               // idea, mvp, live
+  
+  // Clarification
+  clarificationAsked  Json?                // Array of questions asked
+  clarificationAnswers Json?               // Array of answers
+  
+  // Status
+  status              String               @default("pending") // pending, processing, completed, failed
+  
+  // Relations
+  analysis            IdeaAnalysis?
+  
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  
+  @@index([userId])
+  @@index([status])
+}
+
+model IdeaAnalysis {
+  id                    String               @id @default(cuid())
+  submissionId          String               @unique
+  submission            IdeaSubmission       @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  
+  // Structured Idea
+  problemStatement      String               @db.Text
+  targetSegments        Json                 // Ranked array of customer segments
+  jobToBeDone           String               @db.Text
+  primaryUseCases       Json                 // Array of use cases
+  substituteSolutions   Json                 // Array of existing behaviors/solutions
+  
+  // Scores
+  demandScore           Float                // 0-100
+  buyingIntentScore     Float                // 0-100
+  saturationIndex       Float                // 0-100 (higher = more saturated)
+  validationScore       Float                // 0-100 (final score)
+  
+  // Decision
+  verdict               String               // BUILD, PIVOT, KILL
+  confidenceLevel       String               // LOW, MEDIUM, HIGH
+  
+  // Relations
+  demandSignals         DemandSignal[]
+  competitors           Competitor[]
+  gaps                  GapOpportunity[]
+  risks                 RiskFactor[]
+  recommendations       StrategicRecommendation[]
+  report                ValidationReport?
+  
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+  
+  @@index([validationScore])
+  @@index([verdict])
+}
+
+model DemandSignal {
+  id                  String               @id @default(cuid())
+  analysisId          String
+  analysis            IdeaAnalysis         @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  
+  // Signal Data
+  source              String               // reddit, twitter, reviews, search, content
+  problem             String               @db.Text
+  frequency           Int                  // How many times mentioned
+  painIntensity       Float                // 0-10 scale
+  recencyWeight       Float                // 0-1 (higher = more recent)
+  evidencePatterns    Json                 // Array of actual quotes/examples
+  
+  // Metadata
+  dateCollected       DateTime             @default(now())
+  sourceUrl           String?              @db.Text
+  
+  createdAt           DateTime             @default(now())
+  
+  @@index([analysisId])
+  @@index([source])
+}
+
+model Competitor {
+  id                  String               @id @default(cuid())
+  analysisId          String
+  analysis            IdeaAnalysis         @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  
+  // Competitor Data
+  name                String
+  type                String               // direct, indirect, alternative
+  coreOffering        String               @db.Text
+  pricingModel        String               @db.Text
+  positioning         String               @db.Text
+  
+  // Weakness Analysis
+  weaknessSignals     Json                 // Array of complaints/issues from reviews
+  userFrustrations    Json                 // Array of frustration points
+  featureGaps         Json                 // Array of missing features users want
+  
+  // Market Position
+  marketShare         String?              // estimated: dominant, major, niche
+  userBase            String?              // estimated size
+  
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  
+  @@index([analysisId])
+  @@index([type])
+}
+
+model GapOpportunity {
+  id                  String               @id @default(cuid())
+  analysisId          String
+  analysis            IdeaAnalysis         @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  
+  // Gap Data
+  gapType             String               // underserved_segment, feature_gap, ux_gap, pricing_gap
+  description         String               @db.Text
+  validationEvidence  Json                 // Array of signals that validate this gap
+  impactPotential     String               // HIGH, MEDIUM, LOW
+  
+  // Addressability
+  effortToAddress     String               // LOW, MEDIUM, HIGH
+  competitiveAdvantage Boolean             // Can this become a moat?
+  
+  createdAt           DateTime             @default(now())
+  
+  @@index([analysisId])
+  @@index([impactPotential])
+}
+
+model RiskFactor {
+  id                  String               @id @default(cuid())
+  analysisId          String
+  analysis            IdeaAnalysis         @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  
+  // Risk Data
+  riskType            String               // market_saturation, weak_demand, switching_cost, dominant_player
+  description         String               @db.Text
+  severity            String               // CRITICAL, HIGH, MEDIUM, LOW
+  evidence            Json                 // Supporting data/patterns
+  
+  // Impact
+  probabilityOfFailure Float               // 0-1
+  
+  createdAt           DateTime             @default(now())
+  
+  @@index([analysisId])
+  @@index([severity])
+}
+
+model StrategicRecommendation {
+  id                  String               @id @default(cuid())
+  analysisId          String
+  analysis            IdeaAnalysis         @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  
+  // Recommendation Data
+  recommendationType  String               // niche_target, differentiation, positioning, alternative_direction
+  description         String               @db.Text
+  specificActions     Json                 // Array of actionable steps
+  refinedICP          Json?                // Refined ideal customer profile
+  
+  // Validation
+  basedOnGaps         Json                 // Array of gap IDs this addresses
+  expectedOutcome     String               @db.Text
+  
+  createdAt           DateTime             @default(now())
+  
+  @@index([analysisId])
+}
+
+model ValidationReport {
+  id                  String               @id @default(cuid())
+  analysisId          String               @unique
+  analysis            IdeaAnalysis         @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  
+  // Report Sections
+  verdict             Json                 // {decision, validationScore, reasoning}
+  marketDemand        Json                 // {topProblems, demandScore, evidence}
+  competition         Json                 // {keyPlayers, saturationLevel, analysis}
+  opportunityGaps     Json                 // Array of gaps with evidence
+  risks               Json                 // Array of risks with severity
+  strategicDirection  Json                 // {recommendation, refinedApproach, actions}
+  validationPlan      Json                 // {test, successMetrics, timeline}
+  
+  // Metadata
+  generatedAt         DateTime             @default(now())
+  reportVersion       String               @default("1.0")
+  
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  
+  @@index([generatedAt])
 }
