@@ -213,3 +213,24 @@ body {
 .animate-fade-up {
   animation: amie-fade-up 0.45s ease forwards;
 }
+
+/* ── Unify platform: override legacy dark tokens → AMIE paper ─────── */
+/* All pages now use the same warm editorial theme.                     */
+:root {
+  --color-bg:           hsl(var(--amie-bg));
+  --color-surface:      hsl(var(--amie-surface));
+  --color-surface-2:    hsl(var(--amie-surface-2));
+  --color-border:       hsl(var(--amie-border));
+  --color-border-2:     hsl(var(--amie-border));
+  --color-accent:       hsl(var(--amie-signal));
+  --color-accent-dim:   hsl(var(--amie-signal) / 0.12);
+  --color-accent-muted: hsl(var(--amie-signal) / 0.3);
+  --color-text:         hsl(var(--amie-fg));
+  --color-text-2:       hsl(var(--amie-ink-soft));
+  --color-text-3:       hsl(var(--amie-ink-muted));
+  --color-error:        hsl(var(--amie-destructive));
+  --color-warning:      hsl(var(--amie-verdict-risky));
+  --color-success:      hsl(var(--amie-verdict-strong));
+  /* Use Inter Tight as default body font */
+  --font-sans:          'Inter Tight', 'Inter', system-ui, sans-serif;
+}

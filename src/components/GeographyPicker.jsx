@@ -157,12 +157,12 @@ export default function GeographyPicker({ value, onChange }) {
             center={[20, 0]}
             zoom={1}
             scrollWheelZoom={false}
-            style={{ height: '100%', width: '100%', background: '#0d0d0f' }}
+            style={{ height: '100%', width: '100%', background: 'hsl(var(--amie-surface))' }}
             zoomControl={false}
             attributionControl={false}
           >
             <TileLayer
-              url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+              url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
               attribution='&copy; <a href="https://carto.com">CARTO</a>'
               subdomains="abcd"
             />
@@ -173,8 +173,8 @@ export default function GeographyPicker({ value, onChange }) {
                 center={m.pos}
                 radius={6}
                 pathOptions={{
-                  color: '#00E879',
-                  fillColor: '#00E879',
+                  color: '#7bc400',
+                  fillColor: '#a4e000',
                   fillOpacity: 0.7,
                   weight: 1.5,
                 }}
