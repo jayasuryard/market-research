@@ -1,6 +1,7 @@
 import express from 'express';
 import 'dotenv/config';
 import morgan from 'morgan';
+import cors from 'cors';
 import prisma from './config/dbconnect.js';
 import routes from './routes/index.js';
 
@@ -8,6 +9,11 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // Middleware
+app.use(cors({
+  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
 app.use(morgan('dev'));
 app.use(express.json());
 

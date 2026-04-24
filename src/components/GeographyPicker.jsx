@@ -173,8 +173,8 @@ export default function GeographyPicker({ value, onChange }) {
                 center={m.pos}
                 radius={6}
                 pathOptions={{
-                  color: '#7bc400',
-                  fillColor: '#a4e000',
+                  color: '#2563EB',
+                  fillColor: '#3B82F6',
                   fillOpacity: 0.7,
                   weight: 1.5,
                 }}

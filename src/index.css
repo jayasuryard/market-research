@@ -7,15 +7,15 @@
   --color-surface-2: #161619;
   --color-border: #1C1C24;
   --color-border-2: #26262F;
-  --color-accent: #00E879;
-  --color-accent-dim: #00E87920;
-  --color-accent-muted: #00E87940;
+  --color-accent: #3B82F6;
+  --color-accent-dim: #3B82F620;
+  --color-accent-muted: #3B82F640;
   --color-text: #EAEAEA;
   --color-text-2: #8B8B97;
   --color-text-3: #4A4A56;
   --color-error: #E5383B;
   --color-warning: #F59E0B;
-  --color-success: #00E879;
+  --color-success: #3B82F6;
 
   --font-sans: 'Inter', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
@@ -69,8 +69,8 @@ body {
 }
 
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 0 0 #00E87930; }
-  50% { box-shadow: 0 0 0 8px #00E87900; }
+  0%, 100% { box-shadow: 0 0 0 0 #3B82F630; }
+  50% { box-shadow: 0 0 0 8px #3B82F600; }
 }
 
 .cursor-blink {
@@ -82,7 +82,7 @@ body {
 }
 
 .glow-accent {
-  box-shadow: 0 0 20px #00E87925, 0 0 40px #00E87910;
+  box-shadow: 0 0 20px #3B82F625, 0 0 40px #3B82F610;
 }
 
 .border-accent-glow {
@@ -106,7 +106,7 @@ body {
   /* Paper background & ink */
   --amie-bg:           40 20% 97%;
   --amie-fg:           220 15% 9%;
-  --amie-signal:       72 95% 55%;
+  --amie-signal:       217 91% 60%;
   /* Surfaces */
   --amie-surface:      38 18% 94%;
   --amie-surface-2:    36 14% 90%;

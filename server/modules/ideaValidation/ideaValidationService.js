@@ -11,8 +11,17 @@ class IdeaValidationService {
   async submitIdea(data) {
     try {
       const { userId, ideaDescription, targetAudience, geography, pricingAssumption, stage } = data;
+
+      // Ensure the user row exists (upsert guest user or any unregistered caller)
+      const resolvedUserId = (userId && userId !== 'guest') ? userId : 'guest_anon';
+      await prisma.user.upsert({
+        where: { id: resolvedUserId },
+        create: { id: resolvedUserId, email: `${resolvedUserId}@marketiq.local`, name: 'Guest' },
+        update: {},
+      });
+
       const submission = await prisma.ideaSubmission.create({
-        data: { userId, ideaDescription, targetAudience, geography, pricingAssumption, stage, status: 'pending' },
+        data: { userId: resolvedUserId, ideaDescription, targetAudience, geography, pricingAssumption, stage, status: 'pending' },
       });
 
       const clarification = await this.checkClarificationNeeded(submission);
